@@ -1,6 +1,8 @@
 # Rationale
 
-Software projects tend to have thousands of lines of code which are often hard to navigate. It would be useful to provide a tool for a bird's view over the project. This should greatly simplify navigation in unfamiliar codebase.
+Software projects tend to have thousands of lines of code which are often hard to navigate.
+
+It would be useful to provide a tool for a bird's view over the project. This should greatly simplify navigation in unfamiliar codebase.
 
 The aim of this project is to provide a web-based visual UI for navigation in software projects written in Go language. Go language was picked as a target platform since it has sophisticated module system and strict rules for source code organization. These properties make it easy to analyze the code.
 
