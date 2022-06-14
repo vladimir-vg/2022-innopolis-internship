@@ -66,3 +66,39 @@ func makeSpawnGraph(prog *ssa.Program) *spawngraph {
 	buildSpawnDAG(sgraph, graph, entryFunc)
 	return sgraph
 }
+
+func (sgraph *spawngraph) goroutinesRowsStream() chan goroutineRow {
+	ch := make(chan goroutineRow)
+	go (func() {
+		// produce new rows
+		for f := range sgraph.spawns {
+			pos1 := f.Pos()
+			pos2 := f.Prog.Fset.Position(pos1)
+			ch <- goroutineRow{
+				id:          f.Name(),
+				packageName: f.Package().String(),
+				filename:    pos2.Filename,
+				line:        pos2.Line,
+			}
+		}
+		close(ch)
+	})()
+	return ch
+}
+
+func (sgraph *spawngraph) goroutinesAncestryRowsStream() chan goroutineAncestryRow {
+	ch := make(chan goroutineAncestryRow)
+	go (func() {
+		// produce new rows
+		for parentF, children := range sgraph.spawns {
+			for _, childF := range children {
+				ch <- goroutineAncestryRow{
+					parentId: parentF.Name(),
+					childId:  childF.Name(),
+				}
+			}
+		}
+		close(ch)
+	})()
+	return ch
+}

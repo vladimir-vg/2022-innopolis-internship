@@ -10,7 +10,7 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 
-	// "github.com/qustavo/dotsql"
+	"github.com/qustavo/dotsql"
 
 	"golang.org/x/tools/go/packages"
 	"golang.org/x/tools/go/ssa"
@@ -74,10 +74,27 @@ func main() {
 
 	fmt.Printf("#%v\n", sgraph)
 
-	os.Remove("./foo.db")
-	db, err := sql.Open("sqlite3", "./foo.db")
+	os.Remove("../dev.db")
+	db, err := sql.Open("sqlite3", "../dev.db")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
+
+	dot, _ := dotsql.LoadFromFile("../queries.sql")
+	// _, err :=
+	dot.Exec(db, "create-tables")
+
+	for row := range sgraph.goroutinesRowsStream() {
+		dot.Exec(
+			db, "insert-goroutine",
+			row.id, row.packageName, row.filename, row.line,
+		)
+	}
+	for row := range sgraph.goroutinesAncestryRowsStream() {
+		dot.Exec(
+			db, "insert-goroutine-ancestry",
+			row.parentId, row.childId,
+		)
+	}
 }
