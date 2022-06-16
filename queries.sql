@@ -1,20 +1,19 @@
 -- name: create-tables
 CREATE TABLE goroutines (
         id text,
-        package_name text,
+        packageName text,
         filename text,
-        line integer,
-        parent_id text
+        line integer
 );
 CREATE TABLE goroutines_ancestry (
-        parent_id text,
-        child_id text
+        parentId text,
+        childId text
 );
 
 -- name: insert-goroutine
-INSERT INTO goroutines (id, package_name, func_Name, filename, line)
+INSERT INTO goroutines (id, packageName, filename, line)
 VALUES (?, ?, ?, ?);
 
 -- name: insert-goroutine-ancestry
-INSERT INTO goroutines_ancestry (parent_id, child_id)
+INSERT INTO goroutines_ancestry (parentId, childId)
 VALUES (?, ?);
