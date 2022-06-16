@@ -7,16 +7,28 @@ import initSqlJs from 'sql.js';
 // Required to let webpack 4 know it needs to copy the wasm file to our assets
 // import sqlWasm from "!!file-loader?name=sql-wasm-[contenthash].wasm!sql.js/dist/sql-wasm.wasm";
 
+const GO_WIDTH = 10;
+const GO_GAP = 15;
+
 function SvgArea({ db }) {
   const [goroutines, setGoroutines] = useState([]);
   useEffect(() => {
-    const rows = db.exec("SELECT * FROM goroutines");
-    console.log(rows);
+    const [rows] = db.exec("SELECT id, n FROM prepared_goroutines");
+    // debugger
+    const goroutines0 = rows.values.map((row, index) => {
+      const [id, n] = row;
+      return {
+        id,
+        x: (GO_WIDTH+GO_GAP)*index, y: n*10 + 40,
+        width: GO_WIDTH, height: GO_WIDTH*3,
+      }});
+    setGoroutines(goroutines0);
   }, [db]);
 
   return (
     <svg width="500" height="500">
-      <rect x="10" y="10" width="100" height="100" />
+      {goroutines.map(({ id, x, y, width, height }) =>
+        <rect key={id} x={x} y={y} width={width} height={height} style={{fill: 'grey'}} />)}
     </svg>
   );
 }

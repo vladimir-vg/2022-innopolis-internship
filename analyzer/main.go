@@ -83,7 +83,7 @@ func main() {
 
 	dot, _ := dotsql.LoadFromFile("../queries.sql")
 	// _, err :=
-	dot.Exec(db, "create-tables")
+	dot.Exec(db, "initialize")
 
 	for row := range sgraph.goroutinesRowsStream() {
 		dot.Exec(
