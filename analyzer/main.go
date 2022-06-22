@@ -84,17 +84,26 @@ func main() {
 	dot, _ := dotsql.LoadFromFile("../queries.sql")
 	// _, err :=
 	dot.Exec(db, "initialize")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	for row := range sgraph.goroutinesRowsStream() {
-		dot.Exec(
+		_, err := dot.Exec(
 			db, "insert-goroutine",
 			row.id, row.packageName, row.filename, row.line,
 		)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 	for row := range sgraph.goroutinesAncestryRowsStream() {
-		dot.Exec(
-			db, "insert-goroutine-ancestry",
-			row.parentId, row.childId,
+		_, err := dot.Exec(
+			db, "insert-spawn",
+			row.parentId, row.childId, row.filename, row.line,
 		)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }

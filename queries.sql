@@ -1,13 +1,16 @@
 -- name: initialize
 CREATE TABLE goroutines (
+        -- id is the name of the function that was spawned
         id text,
         packageName text,
         filename text,
         line integer
 );
-CREATE TABLE goroutines_ancestry (
+CREATE TABLE spawns (
         parentId text,
-        childId text
+        childId text,
+        filename text,
+        line integer
 );
 
 
@@ -40,14 +43,15 @@ WITH RECURSIVE
         rank_option(id, n) AS (
                 SELECT 'main' AS id, 0 AS n
                 UNION ALL
-                SELECT goroutines_ancestry.childId AS id, rank_option.n+1 AS n
-                FROM goroutines_ancestry
-                INNER JOIN rank_option ON rank_option.id = goroutines_ancestry.parentId 
+                SELECT spawns.childId AS id, rank_option.n+1 AS n
+                FROM spawns
+                INNER JOIN rank_option ON rank_option.id = spawns.parentId 
         ),
         rank(id, n) AS (
-                SELECT rank_option.id, MAX(rank_option.n)
+                SELECT rank_option.id AS id, MAX(rank_option.n) AS n
                 FROM rank_option
                 GROUP BY id
+                ORDER BY n
         )
 SELECT * FROM rank;
 
@@ -55,6 +59,6 @@ SELECT * FROM rank;
 INSERT INTO goroutines (id, packageName, filename, line)
 VALUES (?, ?, ?, ?);
 
--- name: insert-goroutine-ancestry
-INSERT INTO goroutines_ancestry (parentId, childId)
-VALUES (?, ?);
+-- name: insert-spawn
+INSERT INTO spawns (parentId, childId, filename, line)
+VALUES (?, ?, ?, ?);

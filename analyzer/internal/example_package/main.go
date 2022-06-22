@@ -2,25 +2,22 @@ package main
 
 import "fmt"
 
-func d() {
-	go (func() {
-		fmt.Println("Deep inside d()")
-	})()
-}
-
-func f() {
-	go d()
-}
-
-func g() {
-	f()
-	go (func() {
-		go d()
-	})()
+func alpha() {
 }
 
 func main() {
 	fmt.Println("Hello World!")
-	g()
-	d()
+	// 1
+	go (func() {})()
+	// 2
+	go (func() {
+		// 5
+		go (func() {})()
+		// 6
+		go alpha()
+	})()
+	// 3
+	go alpha()
+	// 4
+	go alpha()
 }

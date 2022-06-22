@@ -10,4 +10,6 @@ type goroutineRow struct {
 type goroutineAncestryRow struct {
 	parentId string
 	childId  string
+	filename string
+	line     int
 }
