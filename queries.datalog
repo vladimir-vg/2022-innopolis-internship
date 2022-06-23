@@ -1,0 +1,86 @@
+ancestry_rank_option(Id, Rank) :-
+  Id = "main-goroutine",
+  Rank = 0.
+
+ancestry_rank_option(Id, Rank2) :-
+  spawns(ParentId, Id),
+  ancestry_rank_option(ParentId, Rank1),
+  Rank2 = Rank1 + 1.
+
+ancestry_rank(Id, max<Rank>) :-
+  ancestry_rank_option(Id, Rank).
+
+
+
+%%%%%%%%%%%%
+
+
+
+time_events(Timestamp, Type, Id, null, null) :-
+  Timestamp = 0,
+  Type = "goroutine-start",
+  Id = "main".
+
+time_events(Timestamp, Type, null, ParentId, ChildId) :-
+  Type = "spawn-child",
+  spawn_child_event(MaxTimestamp, RowNumber, ParentId, ChildId),
+  Timestamp = MaxTimestamp + RowNumber.
+
+time_events(Timestamp, Type, Id, null, null) :-
+  Type = "goroutine-start",
+  goroutine_start_event(MaxTimestamp, RowNumber, Id),
+  Timestamp = MaxTimestamp + RowNumber.
+
+
+
+spawn_child_event(MaxTimestamp, row_number<>, ParentId, ChildId) :-
+  spawns(ParentId, ChildId),
+  all_parents_have_start_events(ChildId),
+  parent_start_event_max_timestamp(ChildId, MaxTimestamp).
+
+goroutine_start_event(MaxTimestamp, row_number<>, Id) :-
+  has_all_spawn_events(Id),
+  spawn_event_max_timestamp(Id, MaxTimestamp).
+
+
+% we could check if all parents have start events via negation
+% however, that would create a negation in the dependency loop,
+% which is not allowed in Datalog and likely wouldn't work in SQL too.
+% Instead, we just gonna count how many events we have
+
+all_parents_have_start_events(ChildId) :-
+  parent_start_events_count(ChildId, Count),
+  parents_count(ChildId, Count).
+
+parent_start_events_count(ChildId, count<ParentId>) :-
+  spawns(ParentId, ChildId),
+  Type = "goroutine-start",
+  time_events(_Timestamp, Type, ParentId, null, null).
+
+parents_count(ChildId, count<ParentId>) :-
+  % group by parent id
+  spawns(ParentId, ChildId).
+
+parent_start_event_max_timestamp(ChildId, max<Timestamp>) :-
+  spawns(ParentId, ChildId),
+  Type = "goroutine-start",
+  time_events(Timestamp, Type, ParentId, null, null).
+
+
+
+has_all_spawn_events(ChildId) :-
+  spawns_count(ChildId, Count),
+  spawn_child_events_count(ChildId, Count).
+
+spawns_count(ChildId, count<ParentId>) :-
+  % not grouped by parent id
+  spawns(ParentId, ChildId).
+
+spawn_child_events_count(ChildId, count<ParentId>) :-
+  Type = "spawn-child",
+  time_events(_Timestamp, Type, null, ParentId, ChildId).
+
+spawn_event_max_timestamp(ChildId, max<Timestamp>) :-
+  Type = "spawn-child",
+  time_events(Timestamp, Type, null, _ParentId, ChildId).
+
