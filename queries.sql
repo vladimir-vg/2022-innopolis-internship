@@ -45,14 +45,51 @@ FROM ancestry_rank_option
 GROUP BY id
 ORDER BY rank;
 
--- CREATE VIEW time_events AS
--- SELECT
---         'goroutine-start' AS type,
---         filename,
---         line,
---         id
--- FROM goroutines
--- INNER JOIN ancestry_rank ON ancestry_rank.id = goroutines.id
+CREATE VIEW time_events AS
+WITH RECURSIVE
+        time_events0(timestamp, type, id, parentId, childId) AS (
+                SELECT 0 AS timestamp, 'goroutine-start' AS type, 'main' AS id, NULL AS parentId, NULL AS childId
+                UNION ALL
+                SELECT
+                        (spawn_child_event.maxTimestamp + spawn_child_event.rowNumber) AS timestamp,
+                        'spawn-child' AS type, NULL as id, spawn_child_event.parentId, spawn_child_event.childId
+                FROM spawn_child_event
+        ),
+        spawn_child_event(maxTimestamp, rowNumber, parentId, childId) AS (
+                SELECT
+                        parent_start_event_max_timestamp.maxTimestamp,
+                        ROW_NUMBER() OVER (PARTITION BY spawns.parentId) AS rowNumber,
+                        spawns.parentId, spawns.childId
+                FROM spawns
+                INNER JOIN all_parents_have_start_events ON all_parents_have_start_events.childId = spawns.childId
+                INNER JOIN parent_start_event_max_timestamp ON parent_start_event_max_timestamp.childId = spawns.childId
+        ),
+        all_parents_have_start_events(childId) AS (
+                SELECT parent_start_events_count.childId
+                FROM parent_start_events_count
+                INNER JOIN parents_count ON parent_start_events_count.childId = parents_count.childId
+                WHERE parent_start_events_count.count = parents_count.count
+        ),
+        parent_start_events_count(childId, count) AS (
+                SELECT spawns.childId, COUNT(*) AS count
+                FROM spawns
+                INNER JOIN time_events0 ON time_events0.parentId = spawns.parentId
+                WHERE time_events0.type = 'goroutine-start'
+                GROUP BY spawns.childId
+        ),
+        parents_count(childId, count) AS (
+                SELECT spawns.childId, COUNT(*)
+                FROM spawns
+                GROUP BY spawns.childId
+        ),
+        parent_start_event_max_timestamp(childId, maxTimestamp) AS (
+                SELECT spawns.childId, MAX(time_events0.timestamp) AS timestamp
+                FROM spawns
+                INNER JOIN time_events0 ON time_events0.parentId = spawns.parentId
+                WHERE time_events0.type = 'goroutine-start'
+                GROUP BY spawns.childId
+        )
+SELECT * FROM time_events0;
 
 -- name: insert-goroutine
 INSERT INTO goroutines (id, packageName, filename, line)

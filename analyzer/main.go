@@ -82,8 +82,7 @@ func main() {
 	defer db.Close()
 
 	dot, _ := dotsql.LoadFromFile("../queries.sql")
-	// _, err :=
-	dot.Exec(db, "initialize")
+	_, err = dot.Exec(db, "initialize")
 	if err != nil {
 		log.Fatal(err)
 	}
