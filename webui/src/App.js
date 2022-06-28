@@ -4,28 +4,18 @@ import { useEffect, useState } from 'react';
 import './App.css';
 import initSqlJs from 'sql.js';
 
-const GO_WIDTH = 10;
-const GO_GAP = 15;
+const CELL_WIDTH = 10;
+const CELL_HEIGHT = 5;
+const HGAP = 15;
+const VGAP = 5;
 
-function SvgArea({ db }) {
-  const [goroutines, setGoroutines] = useState([]);
-  useEffect(() => {
-    const [rows] = db.exec("SELECT id, n FROM prepared_goroutines");
-    // debugger
-    const goroutines0 = rows.values.map((row, index) => {
-      const [id, n] = row;
-      return {
-        id,
-        x: (GO_WIDTH+GO_GAP)*index, y: n*10 + 40,
-        width: GO_WIDTH, height: GO_WIDTH*3,
-      }});
-    setGoroutines(goroutines0);
-  }, [db]);
-
+function SvgArea({ goRects }) {
   return (
     <svg width="500" height="500">
-      {goroutines.map(({ id, x, y, width, height }) =>
-        <rect key={id} x={x} y={y} width={width} height={height} style={{fill: 'grey'}} />)}
+      {goRects.map(({ id, x, y, height }) =>
+        <rect key={id} style={{fill: 'grey'}}
+          x={x*(CELL_WIDTH+HGAP)} y={y*(CELL_HEIGHT+VGAP)}
+          width={CELL_WIDTH} height={height*(CELL_HEIGHT+VGAP) + CELL_HEIGHT} />)}
     </svg>
   );
 }
@@ -34,6 +24,7 @@ function SvgArea({ db }) {
 function App() {
   const [sql, setSql] = useState(null);
   const [db, setDb] = useState(null);
+  const [goRects, setGoRects] = useState(null);
 
   useEffect(() => {
     const helper = async () => {
@@ -43,7 +34,23 @@ function App() {
       setSql(sql0);
     }
     helper();
-  }, []);
+  }, [sql]);
+
+  useEffect(() => {
+    if (!db) { return; }
+
+    let timeEventsPopulated = false;
+    while (!timeEventsPopulated) {
+      const [{values: [[countBefore]]}] = db.exec(`SELECT COUNT(*) FROM time_events`);
+      db.exec(`INSERT INTO time_events SELECT * FROM new_spawn_child_events`);
+      db.exec(`INSERT INTO time_events SELECT * FROM new_goroutine_start_events`);
+      const [{values: [[countAfter]]}] = db.exec(`SELECT COUNT(*) FROM time_events`);
+      timeEventsPopulated = (countBefore === countAfter);
+    }
+    const rects = db.exec(`SELECT id, x, y, height FROM goroutine_rects`)[0].values
+      .map(([id, x, y, height]) => ({ id, x, y, height }));
+    setGoRects(rects);
+  }, [db]);
 
   const onFileSelect = (e) => {
     const f = e.target.files[0];
@@ -55,7 +62,7 @@ function App() {
     r.readAsArrayBuffer(f);
   }
 
-  const dbIsLoaded = !!db;
+  const dbIsLoaded = !!goRects;
   // hide input, if db is created
   const fileInputDisplay = dbIsLoaded ? 'none' : 'block';
 
@@ -64,21 +71,7 @@ function App() {
       <header style={{display: fileInputDisplay}} className="App-header">
         <input type="file" onChange={onFileSelect} />
       </header>
-      {dbIsLoaded && <SvgArea db={db} />}
-      {/* <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header> */}
+      {dbIsLoaded && <SvgArea goRects={goRects} />}
     </div>
   );
 }

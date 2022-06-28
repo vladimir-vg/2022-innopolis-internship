@@ -25,7 +25,7 @@ CREATE UNIQUE INDEX idx_time_events_uniq_rows
 ON time_events (type, id, parentId, childId, filename, line);
 
 INSERT INTO time_events (timestamp, type, id, parentId, childId, filename, line)
-VALUES (0, 'goroutine-start', 'main', '', '', '', 0);
+VALUES (1, 'goroutine-start', 'main', '', '', '', 0);
 
 
 
