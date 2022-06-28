@@ -1,21 +1,52 @@
 import { useEffect, useState } from 'react';
 
-// import logo from './logo.svg';
 import './App.css';
 import initSqlJs from 'sql.js';
 
-const CELL_WIDTH = 10;
-const CELL_HEIGHT = 5;
+const CELL_WIDTH = 11;
+const CELL_HEIGHT = 11;
 const HGAP = 15;
-const VGAP = 5;
+const VGAP = 3;
 
-function SvgArea({ goRects }) {
+function GoroutineBody({ x, y, height }) {
+  return <g className="GoroutineBody">
+    <rect className="GoroutineBody-main"
+      x={x*(CELL_WIDTH+HGAP)} y={y*(CELL_HEIGHT+VGAP)}
+      width={CELL_WIDTH} height={height*(CELL_HEIGHT+VGAP) + CELL_HEIGHT} />
+    <rect className="GoroutineBody-header"
+      x={x*(CELL_WIDTH+HGAP)} y={y*(CELL_HEIGHT+VGAP)}
+      width={CELL_WIDTH} height={CELL_HEIGHT} />
+  </g>;
+}
+
+function SpawnLine({ x1, y1, x2, y2 }) {
+  return <g className="SpawnLine">
+    <circle
+      cx={x1*(CELL_WIDTH+HGAP) + CELL_WIDTH/2}
+      cy={y1*(CELL_HEIGHT+VGAP) + CELL_HEIGHT/2}
+      r={3} />
+    <line
+      x1={x1*(CELL_WIDTH+HGAP) + CELL_WIDTH/2}
+      y1={y1*(CELL_HEIGHT+VGAP) + CELL_HEIGHT/2}
+      x2={x2*(CELL_WIDTH+HGAP) + CELL_WIDTH/2}
+      y2={y1*(CELL_HEIGHT+VGAP) + CELL_HEIGHT/2} />
+    <line
+      x1={x2*(CELL_WIDTH+HGAP) + CELL_WIDTH/2}
+      y1={y1*(CELL_HEIGHT+VGAP) + CELL_HEIGHT/2}
+      x2={x2*(CELL_WIDTH+HGAP) + CELL_WIDTH/2}
+      y2={y2*(CELL_HEIGHT+VGAP) + CELL_HEIGHT/2} />
+  </g>;
+}
+
+function SvgArea({ figures }) {
+  const { rects, spawnLines } = figures;
+  console.log({ spawnLines })
   return (
     <svg width="500" height="500">
-      {goRects.map(({ id, x, y, height }) =>
-        <rect key={id} style={{fill: 'grey'}}
-          x={x*(CELL_WIDTH+HGAP)} y={y*(CELL_HEIGHT+VGAP)}
-          width={CELL_WIDTH} height={height*(CELL_HEIGHT+VGAP) + CELL_HEIGHT} />)}
+      {rects.map(({ id, x, y, height }) =>
+        <GoroutineBody key={id} x={x} y={y} height={height} />)}
+      {spawnLines.map(({ parentId, childId, x1, y1, x2, y2 }, i) =>
+        <SpawnLine key={i} x1={x1} y1={y1} x2={x2} y2={y2} />)}
     </svg>
   );
 }
@@ -24,7 +55,7 @@ function SvgArea({ goRects }) {
 function App() {
   const [sql, setSql] = useState(null);
   const [db, setDb] = useState(null);
-  const [goRects, setGoRects] = useState(null);
+  const [figures, setFigures] = useState(null);
 
   useEffect(() => {
     const helper = async () => {
@@ -49,7 +80,9 @@ function App() {
     }
     const rects = db.exec(`SELECT id, x, y, height FROM goroutine_rects`)[0].values
       .map(([id, x, y, height]) => ({ id, x, y, height }));
-    setGoRects(rects);
+    const spawnLines = db.exec(`SELECT parentId, childId, x1, y1, x2, y2 FROM spawn_lines`)[0].values
+      .map(([parentId, childId, x1, y1, x2, y2]) => ({ parentId, childId, x1, y1, x2, y2 }));
+    setFigures({ rects, spawnLines });
   }, [db]);
 
   const onFileSelect = (e) => {
@@ -62,7 +95,7 @@ function App() {
     r.readAsArrayBuffer(f);
   }
 
-  const dbIsLoaded = !!goRects;
+  const dbIsLoaded = !!figures;
   // hide input, if db is created
   const fileInputDisplay = dbIsLoaded ? 'none' : 'block';
 
@@ -71,7 +104,7 @@ function App() {
       <header style={{display: fileInputDisplay}} className="App-header">
         <input type="file" onChange={onFileSelect} />
       </header>
-      {dbIsLoaded && <SvgArea goRects={goRects} />}
+      {dbIsLoaded && <SvgArea figures={figures} />}
     </div>
   );
 }

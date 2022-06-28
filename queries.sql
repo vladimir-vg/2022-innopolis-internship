@@ -152,6 +152,20 @@ LEFT JOIN (
 ON t3.id = t1.id
 WHERE t1.type = 'goroutine-start';
 
+
+
+CREATE VIEW spawn_lines AS
+SELECT  t1.parentId,
+        t1.childId,
+        t2.x AS x1,
+        t1.timestamp AS y1,
+        t3.x AS x2,
+        t3.y AS y2
+FROM time_events t1
+INNER JOIN goroutine_rects t2 ON t2.id = t1.parentId
+INNER JOIN goroutine_rects t3 ON t3.id = t1.childId
+WHERE t1.type = 'spawn-child';
+
 -- name: insert-spawn-child-events
 INSERT INTO time_events SELECT * FROM new_spawn_child_events;
 

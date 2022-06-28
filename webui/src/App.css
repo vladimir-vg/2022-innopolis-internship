@@ -36,3 +36,17 @@
     transform: rotate(360deg);
   }
 }
+
+
+
+.GoroutineBody-header {
+  fill: black;
+}
+.GoroutineBody-main {
+  fill: grey;
+}
+
+.SpawnLine line {
+  stroke: black;
+  stroke-width: 1px;
+}
