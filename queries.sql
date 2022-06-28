@@ -60,6 +60,8 @@ FROM ancestry_rank_option
 GROUP BY id
 ORDER BY rank;
 
+
+
 CREATE VIEW goroutines_with_all_spawn_events AS
 WITH RECURSIVE
         parents_count(childId, count) AS (
@@ -83,6 +85,8 @@ SELECT parents_count.childId AS id
 FROM parents_count
 INNER JOIN spawn_child_events_count ON parents_count.childId = spawn_child_events_count.id
 WHERE parents_count.count = spawn_child_events_count.count;
+
+
 
 CREATE VIEW new_spawn_child_events AS
 SELECT  t4.maxTimestamp + (ROW_NUMBER() OVER (ORDER BY t1.parentId)) AS timestamp,
@@ -109,6 +113,8 @@ AND EXISTS (
         WHERE   t3.id = t1.parentId
         AND     t3.type = 'goroutine-start');
 
+
+
 CREATE VIEW new_goroutine_start_events AS
 SELECT  t4.maxTimestamp + (ROW_NUMBER() OVER (ORDER BY t1.id)) AS timestamp,
         'goroutine-start' AS type,
@@ -130,6 +136,22 @@ WHERE NOT EXISTS (
         AND     t1.filename = t2.filename
         AND     t1.line = t2.line);
 
+
+
+CREATE VIEW goroutine_rects AS
+SELECT  t1.id,
+        ROW_NUMBER() OVER (ORDER BY t1.timestamp) AS x,
+        t1.timestamp AS y,
+        COALESCE(t3.maxTimestamp - t1.timestamp, 1) AS height
+FROM time_events t1
+LEFT JOIN (
+        SELECT t2.parentId AS id, MAX(t2.timestamp) AS maxTimestamp
+        FROM time_events t2
+        WHERE t2.type = 'spawn-child'
+        GROUP BY t2.parentId) t3
+ON t3.id = t1.id
+WHERE t1.type = 'goroutine-start';
+
 -- name: insert-spawn-child-events
 INSERT INTO time_events SELECT * FROM new_spawn_child_events;
 
@@ -143,3 +165,11 @@ VALUES (?, ?, ?, ?);
 -- name: insert-spawn
 INSERT INTO spawns (parentId, childId, filename, line)
 VALUES (?, ?, ?, ?);
+
+
+-- INSERT INTO time_events SELECT * FROM new_spawn_child_events;
+-- INSERT INTO time_events SELECT * FROM new_goroutine_start_events;
+-- INSERT INTO time_events SELECT * FROM new_spawn_child_events;
+-- INSERT INTO time_events SELECT * FROM new_goroutine_start_events;
+-- INSERT INTO time_events SELECT * FROM new_spawn_child_events;
+-- INSERT INTO time_events SELECT * FROM new_goroutine_start_events;
