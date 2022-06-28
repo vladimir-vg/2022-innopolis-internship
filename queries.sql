@@ -1,17 +1,32 @@
 -- name: initialize
 CREATE TABLE goroutines (
         -- id is the name of the function that was spawned
-        id text,
-        packageName text,
-        filename text,
-        line integer
+        id text NOT NULL,
+        packageName text NOT NULL,
+        filename text NOT NULL,
+        line integer NOT NULL
 );
 CREATE TABLE spawns (
-        parentId text,
-        childId text,
-        filename text,
-        line integer
+        parentId text NOT NULL,
+        childId text NOT NULL,
+        filename text NOT NULL,
+        line integer NOT NULL
 );
+CREATE TABLE time_events (
+        timestamp integer NOT NULL,
+        type text NOT NULL,
+        id text NOT NULL,
+        parentId text NOT NULL,
+        childId text NOT NULL,
+        filename text NOT NULL,
+        line integer NOT NULL
+);
+CREATE UNIQUE INDEX idx_time_events_uniq_rows
+ON time_events (type, id, parentId, childId, filename, line);
+
+INSERT INTO time_events (timestamp, type, id, parentId, childId, filename, line)
+VALUES (0, 'goroutine-start', 'main', '', '', '', 0);
+
 
 
 -- I need to compute ordering of the goroutines based on ancestry.
@@ -45,51 +60,81 @@ FROM ancestry_rank_option
 GROUP BY id
 ORDER BY rank;
 
-CREATE VIEW time_events AS
+CREATE VIEW goroutines_with_all_spawn_events AS
 WITH RECURSIVE
-        time_events0(timestamp, type, id, parentId, childId) AS (
-                SELECT 0 AS timestamp, 'goroutine-start' AS type, 'main' AS id, NULL AS parentId, NULL AS childId
-                UNION ALL
-                SELECT
-                        (spawn_child_event.maxTimestamp + spawn_child_event.rowNumber) AS timestamp,
-                        'spawn-child' AS type, NULL as id, spawn_child_event.parentId, spawn_child_event.childId
-                FROM spawn_child_event
-        ),
-        spawn_child_event(maxTimestamp, rowNumber, parentId, childId) AS (
-                SELECT
-                        parent_start_event_max_timestamp.maxTimestamp,
-                        ROW_NUMBER() OVER (PARTITION BY spawns.parentId) AS rowNumber,
-                        spawns.parentId, spawns.childId
-                FROM spawns
-                INNER JOIN all_parents_have_start_events ON all_parents_have_start_events.childId = spawns.childId
-                INNER JOIN parent_start_event_max_timestamp ON parent_start_event_max_timestamp.childId = spawns.childId
-        ),
-        all_parents_have_start_events(childId) AS (
-                SELECT parent_start_events_count.childId
-                FROM parent_start_events_count
-                INNER JOIN parents_count ON parent_start_events_count.childId = parents_count.childId
-                WHERE parent_start_events_count.count = parents_count.count
-        ),
-        parent_start_events_count(childId, count) AS (
-                SELECT spawns.childId, COUNT(*) AS count
-                FROM spawns
-                INNER JOIN time_events0 ON time_events0.parentId = spawns.parentId
-                WHERE time_events0.type = 'goroutine-start'
-                GROUP BY spawns.childId
-        ),
         parents_count(childId, count) AS (
                 SELECT spawns.childId, COUNT(*)
                 FROM spawns
                 GROUP BY spawns.childId
         ),
-        parent_start_event_max_timestamp(childId, maxTimestamp) AS (
-                SELECT spawns.childId, MAX(time_events0.timestamp) AS timestamp
-                FROM spawns
-                INNER JOIN time_events0 ON time_events0.parentId = spawns.parentId
-                WHERE time_events0.type = 'goroutine-start'
-                GROUP BY spawns.childId
+        has_all_spawn_events(id) AS (
+                SELECT parents_count.childId AS id
+                FROM parents_count
+                INNER JOIN spawn_child_events_count ON spawn_child_events_count.childId = parents_count.childId
+                WHERE spawn_child_events_count.count = parents_count.count
+        ),
+        spawn_child_events_count(id, count) AS (
+                SELECT time_events.childId AS id, COUNT(*) AS count
+                FROM time_events
+                WHERE time_events.type = 'spawn-child'
+                GROUP BY time_events.childId
         )
-SELECT * FROM time_events0;
+SELECT parents_count.childId AS id
+FROM parents_count
+INNER JOIN spawn_child_events_count ON parents_count.childId = spawn_child_events_count.id
+WHERE parents_count.count = spawn_child_events_count.count;
+
+CREATE VIEW new_spawn_child_events AS
+SELECT  t4.maxTimestamp + (ROW_NUMBER() OVER (ORDER BY t1.parentId)) AS timestamp,
+        'spawn-child' AS type,
+        '' AS id,
+        t1.parentId,
+        t1.childId,
+        t1.filename,
+        t1.line
+FROM spawns t1
+CROSS JOIN (SELECT MAX(time_events.timestamp) AS maxTimestamp FROM time_events) AS t4
+WHERE NOT EXISTS (
+        SELECT 1
+        FROM time_events t2
+        WHERE   t2.type = 'spawn-child'
+        AND     t2.id = ''
+        AND     t1.parentId = t2.parentId
+        AND     t1.childId = t2.childId
+        AND     t1.filename = t2.filename
+        AND     t1.line = t2.line)
+AND EXISTS (
+        SELECT 1
+        FROM time_events t3
+        WHERE   t3.id = t1.parentId
+        AND     t3.type = 'goroutine-start');
+
+CREATE VIEW new_goroutine_start_events AS
+SELECT  t4.maxTimestamp + (ROW_NUMBER() OVER (ORDER BY t1.id)) AS timestamp,
+        'goroutine-start' AS type,
+        t1.id,
+        '' AS parentId,
+        '' AS childId,
+        t1.filename,
+        t1.line
+FROM goroutines t1
+INNER JOIN goroutines_with_all_spawn_events ON goroutines_with_all_spawn_events.id = t1.id
+CROSS JOIN (SELECT MAX(time_events.timestamp) AS maxTimestamp FROM time_events) AS t4
+WHERE NOT EXISTS (
+        SELECT 1
+        FROM time_events t2
+        WHERE   t2.type = 'goroutine-start'
+        AND     t2.id = t1.id
+        AND     t2.parentId = ''
+        AND     t2.childId = ''
+        AND     t1.filename = t2.filename
+        AND     t1.line = t2.line);
+
+-- name: insert-spawn-child-events
+INSERT INTO time_events SELECT * FROM new_spawn_child_events;
+
+-- name: insert-spawn-child-events
+INSERT INTO time_events SELECT * FROM new_goroutine_start_events;
 
 -- name: insert-goroutine
 INSERT INTO goroutines (id, packageName, filename, line)
