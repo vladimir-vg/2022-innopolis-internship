@@ -1,6 +1,9 @@
 package main
 
 import (
+	"log"
+	"os"
+
 	"golang.org/x/tools/go/callgraph"
 	"golang.org/x/tools/go/callgraph/cha"
 	"golang.org/x/tools/go/ssa"
@@ -102,6 +105,32 @@ func (sgraph *spawngraph) goroutinesAncestryRowsStream() chan goroutineAncestryR
 					filename: pos2.Filename,
 					line:     pos2.Line,
 				}
+			}
+		}
+		close(ch)
+	})()
+	return ch
+}
+
+func (sgraph *spawngraph) filesRowsStream() chan fileRow {
+	ch := make(chan fileRow)
+	go (func() {
+		filenames := map[string]bool{}
+		for parentF, children := range sgraph.spawns {
+			parentFilename := parentF.Prog.Fset.Position(parentF.Pos()).Filename
+			filenames[parentFilename] = true
+			for _, edge := range children {
+				callerFilename := edge.Caller.Func.Prog.Fset.Position(edge.Caller.Func.Pos()).Filename
+				calleeFilename := edge.Callee.Func.Prog.Fset.Position(edge.Callee.Func.Pos()).Filename
+				filenames[callerFilename] = true
+				filenames[calleeFilename] = true
+			}
+		}
+		for filename := range filenames {
+			content, err := os.ReadFile(filename)
+			ch <- fileRow{filename: filename, content: content}
+			if err != nil {
+				log.Fatal(err)
 			}
 		}
 		close(ch)

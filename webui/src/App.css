@@ -40,13 +40,17 @@
 
 
 .GoroutineBody-header {
-  fill: black;
+  fill: grey;
 }
 .GoroutineBody-main {
-  fill: grey;
+  fill: lightgrey;
 }
 
 .SpawnLine line {
-  stroke: black;
+  stroke: grey;
   stroke-width: 1px;
 }
+.SpawnLine circle {
+  fill: grey;
+}
+

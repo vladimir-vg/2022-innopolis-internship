@@ -13,3 +13,8 @@ type goroutineAncestryRow struct {
 	filename string
 	line     int
 }
+
+type fileRow struct {
+	filename string
+	content  []byte
+}

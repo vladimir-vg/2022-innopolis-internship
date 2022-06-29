@@ -12,6 +12,10 @@ CREATE TABLE spawns (
         filename text NOT NULL,
         line integer NOT NULL
 );
+CREATE TABLE files (
+        filename text NOT NULL,
+        content text NOT NULL
+);
 CREATE TABLE time_events (
         timestamp integer NOT NULL,
         type text NOT NULL,
@@ -180,6 +184,9 @@ VALUES (?, ?, ?, ?);
 INSERT INTO spawns (parentId, childId, filename, line)
 VALUES (?, ?, ?, ?);
 
+-- name: insert-file
+INSERT INTO files (filename, content)
+VALUES (?, ?);
 
 -- INSERT INTO time_events SELECT * FROM new_spawn_child_events;
 -- INSERT INTO time_events SELECT * FROM new_goroutine_start_events;

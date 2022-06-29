@@ -105,4 +105,13 @@ func main() {
 			log.Fatal(err)
 		}
 	}
+	for row := range sgraph.filesRowsStream() {
+		_, err := dot.Exec(
+			db, "insert-file",
+			row.filename, row.content,
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 }
