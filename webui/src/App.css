@@ -45,6 +45,10 @@
 .GoroutineBody-main {
   fill: lightgrey;
 }
+.GoroutineBody-header:hover {
+  fill: blue;
+  cursor: pointer;
+}
 
 .SpawnLine-line {
   stroke: grey;
@@ -55,4 +59,12 @@
 .SpawnLine-parentPoint {
   fill: grey;
 }
-
+.SpawnLine:hover {
+  cursor: pointer;
+}
+.SpawnLine:hover .SpawnLine-line {
+  stroke: blue;
+}
+.SpawnLine:hover .SpawnLine-parentPoint {
+  fill: blue;
+}

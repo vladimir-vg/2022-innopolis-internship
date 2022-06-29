@@ -2,9 +2,6 @@ package main
 
 import "fmt"
 
-func alpha() {
-}
-
 func main() {
 	fmt.Println("Hello World!")
 	// 1
@@ -18,6 +15,8 @@ func main() {
 	})()
 	// 3
 	go alpha()
+	//
+	go beta()
 	// 4
 	go alpha()
 }

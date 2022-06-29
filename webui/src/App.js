@@ -8,9 +8,11 @@ const CELL_HEIGHT = 11;
 const HGAP = 15;
 const VGAP = 3;
 const SPAWN_LINE_WIDTH = 1;
-const SPAWN_OUTLINE_WIDTH = 8;
+const SPAWN_OUTLINE_WIDTH = 6;
 
 function GoroutineBody({ x, y, height }) {
+  // const [isMouseOver, setMouseOver] = useState(false);
+  // const className = isMouseOver ? 'GoroutineBody hover'
   return <g className="GoroutineBody">
     <rect className="GoroutineBody-main"
       x={x*(CELL_WIDTH+HGAP)} y={y*(CELL_HEIGHT+VGAP)}
@@ -47,7 +49,7 @@ function SpawnLine({ x1, y1, x2, y2 }) {
       x1={x2*(CELL_WIDTH+HGAP) + CELL_WIDTH/2}
       y1={y1*(CELL_HEIGHT+VGAP) + CELL_HEIGHT/2}
       x2={x2*(CELL_WIDTH+HGAP) + CELL_WIDTH/2}
-      y2={y2*(CELL_HEIGHT+VGAP) + CELL_HEIGHT/2} />
+      y2={y2*(CELL_HEIGHT+VGAP)} />
   </g>;
 }
 
