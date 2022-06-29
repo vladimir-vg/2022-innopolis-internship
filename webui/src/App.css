@@ -49,6 +49,10 @@
   fill: blue;
   cursor: pointer;
 }
+.GoroutineBody.selected .GoroutineBody-header {
+  fill: darkblue;
+}
+
 
 .SpawnLine-line {
   stroke: grey;
@@ -67,4 +71,10 @@
 }
 .SpawnLine:hover .SpawnLine-parentPoint {
   fill: blue;
+}
+.SpawnLine.selected .SpawnLine-line {
+  stroke: darkblue;
+}
+.SpawnLine.selected .SpawnLine-parentPoint {
+  fill: darkblue;
 }

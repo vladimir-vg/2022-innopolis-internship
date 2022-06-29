@@ -10,21 +10,25 @@ const VGAP = 3;
 const SPAWN_LINE_WIDTH = 1;
 const SPAWN_OUTLINE_WIDTH = 6;
 
-function GoroutineBody({ x, y, height }) {
-  // const [isMouseOver, setMouseOver] = useState(false);
-  // const className = isMouseOver ? 'GoroutineBody hover'
-  return <g className="GoroutineBody">
+function GoroutineBody({ id, x, y, height, selectedId, setSelectedId }) {
+  // toggle selection
+  const onClick = (e) => setSelectedId((id === selectedId) ? null : id);
+  const className = 'GoroutineBody' + (id === selectedId ? ' selected' : '');
+
+  return <g className={className}>
     <rect className="GoroutineBody-main"
       x={x*(CELL_WIDTH+HGAP)} y={y*(CELL_HEIGHT+VGAP)}
       width={CELL_WIDTH} height={height*(CELL_HEIGHT+VGAP) + CELL_HEIGHT} />
-    <rect className="GoroutineBody-header"
+    <rect className="GoroutineBody-header" onClick={onClick}
       x={x*(CELL_WIDTH+HGAP)} y={y*(CELL_HEIGHT+VGAP)}
       width={CELL_WIDTH} height={CELL_HEIGHT} />
   </g>;
 }
 
-function SpawnLine({ x1, y1, x2, y2 }) {
-  return <g className="SpawnLine">
+function SpawnLine({ id, x1, y1, x2, y2, selectedId, setSelectedId }) {
+  const onClick = (e) => setSelectedId((id === selectedId) ? null : id);
+  const className = 'SpawnLine' + (id === selectedId ? ' selected' : '');
+  return <g className={className} onClick={onClick}>
     <circle className="SpawnLine-parentPoint"
       cx={x1*(CELL_WIDTH+HGAP) + CELL_WIDTH/2}
       cy={y1*(CELL_HEIGHT+VGAP) + CELL_HEIGHT/2}
@@ -39,12 +43,12 @@ function SpawnLine({ x1, y1, x2, y2 }) {
       y={y1*(CELL_HEIGHT+VGAP) + CELL_HEIGHT/2 - SPAWN_OUTLINE_WIDTH/2}
       width={SPAWN_OUTLINE_WIDTH}
       height={(y2-y1)*(CELL_HEIGHT+VGAP) - SPAWN_OUTLINE_WIDTH/2} />
+
     <line className="SpawnLine-line" style={{strokeWidth: SPAWN_LINE_WIDTH}}
       x1={x1*(CELL_WIDTH+HGAP) + CELL_WIDTH/2}
       y1={y1*(CELL_HEIGHT+VGAP) + CELL_HEIGHT/2}
       x2={x2*(CELL_WIDTH+HGAP) + CELL_WIDTH/2}
       y2={y1*(CELL_HEIGHT+VGAP) + CELL_HEIGHT/2} />
-
     <line className="SpawnLine-line" style={{strokeWidth: SPAWN_LINE_WIDTH}}
       x1={x2*(CELL_WIDTH+HGAP) + CELL_WIDTH/2}
       y1={y1*(CELL_HEIGHT+VGAP) + CELL_HEIGHT/2}
@@ -54,13 +58,18 @@ function SpawnLine({ x1, y1, x2, y2 }) {
 }
 
 function SvgArea({ figures }) {
+  const [selectedId, setSelectedId] = useState(null);
   const { rects, spawnLines } = figures;
   return (
     <svg width="500" height="500">
       {rects.map(({ id, x, y, height }) =>
-        <GoroutineBody key={id} x={x} y={y} height={height} />)}
+        <GoroutineBody key={id} id={id}
+          selectedId={selectedId} setSelectedId={setSelectedId}
+          x={x} y={y} height={height} />)}
       {spawnLines.map(({ id, x1, y1, x2, y2 }, i) =>
-        <SpawnLine key={id} x1={x1} y1={y1} x2={x2} y2={y2} />)}
+        <SpawnLine key={id} id={id}
+          selectedId={selectedId} setSelectedId={setSelectedId}
+          x1={x1} y1={y1} x2={x2} y2={y2} />)}
     </svg>
   );
 }
