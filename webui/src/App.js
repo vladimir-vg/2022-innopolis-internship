@@ -7,6 +7,8 @@ const CELL_WIDTH = 11;
 const CELL_HEIGHT = 11;
 const HGAP = 15;
 const VGAP = 3;
+const SPAWN_LINE_WIDTH = 1;
+const SPAWN_OUTLINE_WIDTH = 8;
 
 function GoroutineBody({ x, y, height }) {
   return <g className="GoroutineBody">
@@ -21,16 +23,27 @@ function GoroutineBody({ x, y, height }) {
 
 function SpawnLine({ x1, y1, x2, y2 }) {
   return <g className="SpawnLine">
-    <circle
+    <circle className="SpawnLine-parentPoint"
       cx={x1*(CELL_WIDTH+HGAP) + CELL_WIDTH/2}
       cy={y1*(CELL_HEIGHT+VGAP) + CELL_HEIGHT/2}
       r={3} />
-    <line
+    <rect className="SpawnLine-outline"
+      x={x1*(CELL_WIDTH+HGAP) + CELL_WIDTH}
+      y={y1*(CELL_HEIGHT+VGAP) + CELL_HEIGHT/2 - SPAWN_OUTLINE_WIDTH/2}
+      width={(x2-x1)*(CELL_WIDTH+HGAP) - CELL_WIDTH/2}
+      height={SPAWN_OUTLINE_WIDTH} />
+    <rect className="SpawnLine-outline"
+      x={x2*(CELL_WIDTH+HGAP) + CELL_WIDTH/2 - SPAWN_OUTLINE_WIDTH/2}
+      y={y1*(CELL_HEIGHT+VGAP) + CELL_HEIGHT/2 - SPAWN_OUTLINE_WIDTH/2}
+      width={SPAWN_OUTLINE_WIDTH}
+      height={(y2-y1)*(CELL_HEIGHT+VGAP) - SPAWN_OUTLINE_WIDTH/2} />
+    <line className="SpawnLine-line" style={{strokeWidth: SPAWN_LINE_WIDTH}}
       x1={x1*(CELL_WIDTH+HGAP) + CELL_WIDTH/2}
       y1={y1*(CELL_HEIGHT+VGAP) + CELL_HEIGHT/2}
       x2={x2*(CELL_WIDTH+HGAP) + CELL_WIDTH/2}
       y2={y1*(CELL_HEIGHT+VGAP) + CELL_HEIGHT/2} />
-    <line
+
+    <line className="SpawnLine-line" style={{strokeWidth: SPAWN_LINE_WIDTH}}
       x1={x2*(CELL_WIDTH+HGAP) + CELL_WIDTH/2}
       y1={y1*(CELL_HEIGHT+VGAP) + CELL_HEIGHT/2}
       x2={x2*(CELL_WIDTH+HGAP) + CELL_WIDTH/2}
@@ -40,7 +53,6 @@ function SpawnLine({ x1, y1, x2, y2 }) {
 
 function SvgArea({ figures }) {
   const { rects, spawnLines } = figures;
-  console.log({ spawnLines })
   return (
     <svg width="500" height="500">
       {rects.map(({ id, x, y, height }) =>

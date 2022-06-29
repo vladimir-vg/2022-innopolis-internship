@@ -46,11 +46,13 @@
   fill: lightgrey;
 }
 
-.SpawnLine line {
+.SpawnLine-line {
   stroke: grey;
-  stroke-width: 1px;
 }
-.SpawnLine circle {
+.SpawnLine-outline {
+  fill: white;
+}
+.SpawnLine-parentPoint {
   fill: grey;
 }
 
