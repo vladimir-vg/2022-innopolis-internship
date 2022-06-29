@@ -59,8 +59,8 @@ function SvgArea({ figures }) {
     <svg width="500" height="500">
       {rects.map(({ id, x, y, height }) =>
         <GoroutineBody key={id} x={x} y={y} height={height} />)}
-      {spawnLines.map(({ parentId, childId, x1, y1, x2, y2 }, i) =>
-        <SpawnLine key={i} x1={x1} y1={y1} x2={x2} y2={y2} />)}
+      {spawnLines.map(({ id, x1, y1, x2, y2 }, i) =>
+        <SpawnLine key={id} x1={x1} y1={y1} x2={x2} y2={y2} />)}
     </svg>
   );
 }
@@ -94,8 +94,9 @@ function App() {
     }
     const rects = db.exec(`SELECT id, x, y, height FROM goroutine_rects`)[0].values
       .map(([id, x, y, height]) => ({ id, x, y, height }));
-    const spawnLines = db.exec(`SELECT parentId, childId, x1, y1, x2, y2 FROM spawn_lines`)[0].values
-      .map(([parentId, childId, x1, y1, x2, y2]) => ({ parentId, childId, x1, y1, x2, y2 }));
+    const spawnLines = db.exec(`SELECT id, parentId, childId, x1, y1, x2, y2 FROM spawn_lines`)[0].values
+      .map(([id, parentId, childId, x1, y1, x2, y2]) =>
+        ({ id, parentId, childId, x1, y1, x2, y2 }));
     setFigures({ rects, spawnLines });
   }, [db]);
 

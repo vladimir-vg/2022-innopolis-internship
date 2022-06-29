@@ -100,6 +100,7 @@ func (sgraph *spawngraph) goroutinesAncestryRowsStream() chan goroutineAncestryR
 				pos1 := edge.Site.Pos()
 				pos2 := childF.Prog.Fset.Position(pos1)
 				ch <- goroutineAncestryRow{
+					id:       pos2.String(),
 					parentId: parentF.Name(),
 					childId:  childF.Name(),
 					filename: pos2.Filename,

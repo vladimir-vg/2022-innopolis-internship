@@ -8,6 +8,7 @@ type goroutineRow struct {
 }
 
 type goroutineAncestryRow struct {
+	id       string
 	parentId string
 	childId  string
 	filename string

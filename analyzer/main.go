@@ -99,7 +99,7 @@ func main() {
 	for row := range sgraph.goroutinesAncestryRowsStream() {
 		_, err := dot.Exec(
 			db, "insert-spawn",
-			row.parentId, row.childId, row.filename, row.line,
+			row.id, row.parentId, row.childId, row.filename, row.line,
 		)
 		if err != nil {
 			log.Fatal(err)

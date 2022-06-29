@@ -7,6 +7,7 @@ CREATE TABLE goroutines (
         line integer NOT NULL
 );
 CREATE TABLE spawns (
+        id text NOT NULL,
         parentId text NOT NULL,
         childId text NOT NULL,
         filename text NOT NULL,
@@ -95,7 +96,7 @@ WHERE parents_count.count = spawn_child_events_count.count;
 CREATE VIEW new_spawn_child_events AS
 SELECT  t4.maxTimestamp + (ROW_NUMBER() OVER (ORDER BY t1.parentId)) AS timestamp,
         'spawn-child' AS type,
-        '' AS id,
+        t1.id,
         t1.parentId,
         t1.childId,
         t1.filename,
@@ -106,7 +107,7 @@ WHERE NOT EXISTS (
         SELECT 1
         FROM time_events t2
         WHERE   t2.type = 'spawn-child'
-        AND     t2.id = ''
+        AND     t2.id = t2.id
         AND     t1.parentId = t2.parentId
         AND     t1.childId = t2.childId
         AND     t1.filename = t2.filename
@@ -159,7 +160,8 @@ WHERE t1.type = 'goroutine-start';
 
 
 CREATE VIEW spawn_lines AS
-SELECT  t1.parentId,
+SELECT  t1.id,
+        t1.parentId,
         t1.childId,
         t2.x AS x1,
         t1.timestamp AS y1,
@@ -181,8 +183,8 @@ INSERT INTO goroutines (id, packageName, filename, line)
 VALUES (?, ?, ?, ?);
 
 -- name: insert-spawn
-INSERT INTO spawns (parentId, childId, filename, line)
-VALUES (?, ?, ?, ?);
+INSERT INTO spawns (id, parentId, childId, filename, line)
+VALUES (?, ?, ?, ?, ?);
 
 -- name: insert-file
 INSERT INTO files (filename, content)
