@@ -1,4 +1,7 @@
 import { useEffect, useState } from 'react';
+import CodeMirror from '@uiw/react-codemirror';
+import { StreamLanguage } from '@codemirror/language';
+import { go } from '@codemirror/legacy-modes/mode/go';
 
 import './App.css';
 import initSqlJs from 'sql.js';
@@ -57,8 +60,7 @@ function SpawnLine({ id, x1, y1, x2, y2, selectedId, setSelectedId }) {
   </g>;
 }
 
-function SvgArea({ figures }) {
-  const [selectedId, setSelectedId] = useState(null);
+function SvgArea({ figures, selectedId, setSelectedId }) {
   const { rects, spawnLines } = figures;
   return (
     <svg width="500" height="500">
@@ -73,6 +75,7 @@ function SvgArea({ figures }) {
     </svg>
   );
 }
+
 
 
 function App() {
@@ -101,11 +104,11 @@ function App() {
       const [{values: [[countAfter]]}] = db.exec(`SELECT COUNT(*) FROM time_events`);
       timeEventsPopulated = (countBefore === countAfter);
     }
-    const rects = db.exec(`SELECT id, x, y, height FROM goroutine_rects`)[0].values
-      .map(([id, x, y, height]) => ({ id, x, y, height }));
-    const spawnLines = db.exec(`SELECT id, parentId, childId, x1, y1, x2, y2 FROM spawn_lines`)[0].values
-      .map(([id, parentId, childId, x1, y1, x2, y2]) =>
-        ({ id, parentId, childId, x1, y1, x2, y2 }));
+    const rects = db.exec(`SELECT id, x, y, height, filename, line FROM goroutine_rects`)[0].values
+      .map(([id, x, y, height, filename, line]) => ({ id, x, y, height, filename, line }));
+    const spawnLines = db.exec(`SELECT id, parentId, childId, x1, y1, x2, y2, filename, line FROM spawn_lines`)[0].values
+      .map(([id, parentId, childId, x1, y1, x2, y2, filename, line]) =>
+        ({ id, parentId, childId, x1, y1, x2, y2, filename, line }));
     setFigures({ rects, spawnLines });
   }, [db]);
 
@@ -119,6 +122,27 @@ function App() {
     r.readAsArrayBuffer(f);
   }
 
+  const [selectedId, setSelectedId] = useState(null);
+  const [sourceContent, setSourceContent] = useState('');
+
+  useEffect(() => {
+    if (!db) { return; }
+    if (selectedId == null) {
+      setSourceContent('');
+      return;
+    }
+
+    for (const rect of [...figures.rects, figures.spawnLines]) {
+      const { id, filename, line } = rect;
+      if (id === selectedId) {
+        const [content] = db.exec(`SELECT content FROM files WHERE filename = ?`, [filename])[0].values[0];
+        const contentStr = new TextDecoder().decode(content);
+        setSourceContent(contentStr);
+        return;
+      }
+    }
+  }, [selectedId, db]);
+
   const dbIsLoaded = !!figures;
   // hide input, if db is created
   const fileInputDisplay = dbIsLoaded ? 'none' : 'block';
@@ -128,7 +152,15 @@ function App() {
       <header style={{display: fileInputDisplay}} className="App-header">
         <input type="file" onChange={onFileSelect} />
       </header>
-      {dbIsLoaded && <SvgArea figures={figures} />}
+      <section>
+        {dbIsLoaded && <SvgArea figures={figures} selectedId={selectedId} setSelectedId={setSelectedId} />}
+      </section>
+      <section>
+        {dbIsLoaded &&
+          <CodeMirror
+            extensions={[StreamLanguage.define(go)]}
+            value={sourceContent}/>}
+      </section>
     </div>
   );
 }

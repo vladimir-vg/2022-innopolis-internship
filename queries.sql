@@ -147,7 +147,9 @@ CREATE VIEW goroutine_rects AS
 SELECT  t1.id,
         ROW_NUMBER() OVER (ORDER BY t1.timestamp) AS x,
         t1.timestamp AS y,
-        COALESCE(t3.maxTimestamp - t1.timestamp, 1) AS height
+        COALESCE(t3.maxTimestamp - t1.timestamp, 1) AS height,
+        t1.filename,
+        t1.line
 FROM time_events t1
 LEFT JOIN (
         SELECT t2.parentId AS id, MAX(t2.timestamp) AS maxTimestamp
@@ -166,7 +168,9 @@ SELECT  t1.id,
         t2.x AS x1,
         t1.timestamp AS y1,
         t3.x AS x2,
-        t3.y AS y2
+        t3.y AS y2,
+        t1.filename,
+        t1.line
 FROM time_events t1
 INNER JOIN goroutine_rects t2 ON t2.id = t1.parentId
 INNER JOIN goroutine_rects t3 ON t3.id = t1.childId
